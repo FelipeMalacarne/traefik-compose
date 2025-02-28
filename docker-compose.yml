@@ -1,0 +1,40 @@
+services:
+    traefik:
+        image: traefik:v3.3
+        command:
+            - --api
+            - --providers.docker
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --entrypoints.web.http.redirections.entryPoint.to=websecure
+            - --entrypoints.web.http.redirections.entryPoint.scheme=https
+            - --certificatesresolvers.myresolver.acme.tlschallenge=true
+            - --certificatesresolvers.myresolver.acme.email=felipemalacarne012@gmail.com
+            - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+        ports:
+            - "80:80"
+            - "443:443"
+        restart: unless-stopped
+        volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+            - "./acme.json:/letsencrypt/acme.json"
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.traefik.rule=Host(`traefik.felipemalacarne.com.br`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+            - "traefik.http.routers.traefik.entrypoints=websecure"
+            - "traefik.http.routers.traefik.service=api@internal"
+            - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+            # - "traefik.http.routers.traefik.middlewares=auth"
+            # - "traefik.http.middlewares.auth.basicauth.users=your_admin_user:your_hashed_admin_password"
+networks:
+    traefik_proxy:
+        external: true
+
+        # Sample Labels
+        # labels:
+        #   - "traefik.enable=true"
+        #   - "traefik.http.routers.service.rule=Host(`service.felipemalacarne.com.br`)"
+        #   - "traefik.http.routers.service.entrypoints=websecure"
+        #   - "traefik.http.routers.service.tls=true"
+        #   - "traefik.http.routers.service.tls.certresolver=myresolver"
+        #   - "traefik.http.services.servicelb.loadbalancer.server.port=3000" # YOUR APP PORT
